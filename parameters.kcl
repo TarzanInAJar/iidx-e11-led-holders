@@ -2,10 +2,10 @@
 // Shared measurements and editable first-fit allowances in millimeters.
 @settings(defaultLengthUnit = mm, kclVersion = 3.0)
 
-export flangeLength = 25.9mm
+export flangeLength = 18.3mm
 export flangeWidth = 17.8mm
 export flangeThickness = 3.26mm
-export flangeClip = 8mm
+export flangeClip = 6.7mm
 export flangeCornerRadius = 1.1mm
 export threadPitch = 1.814mm
 export threadMajorDiameter = 10.65mm
@@ -13,7 +13,8 @@ export threadFormRadius = 0.531mm
 export threadSectionHeight = 10mm
 export threadStartHeight = 0.6mm
 export coneHeight = 4.2mm
-export shoulderRadius = 8.8mm
+export threadNeckRadius = 5.1mm
+export shoulderRadius = 7.5mm
 export flangeBottom = threadSectionHeight + coneHeight
 export flangeTop = flangeBottom + flangeThickness
 export footRadius = 2mm

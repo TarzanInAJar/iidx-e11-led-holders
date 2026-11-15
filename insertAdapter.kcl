@@ -2,7 +2,7 @@
 // Native reconstruction with an axial AB011 M2.5 heat-insert pocket.
 @settings(defaultLengthUnit = mm, kclVersion = 3.0)
 
-import flangeLength, flangeWidth, flangeThickness, flangeClip, flangeCornerRadius, threadPitch, threadFormRadius, threadSectionHeight, threadStartHeight, shoulderRadius, flangeBottom, flangeTop, footRadius, threadCrestCenter, threadCoreRadius, insertVersionHeight, insertStemDiameter, insertBoreDiameter, insertPocketDepth, insertLeadDiameter, insertLeadDepth from "parameters.kcl"
+import flangeLength, flangeWidth, flangeThickness, flangeClip, flangeCornerRadius, threadPitch, threadFormRadius, threadSectionHeight, threadStartHeight, threadNeckRadius, shoulderRadius, flangeBottom, flangeTop, footRadius, threadCrestCenter, threadCoreRadius, insertVersionHeight, insertStemDiameter, insertBoreDiameter, insertPocketDepth, insertLeadDiameter, insertLeadDepth from "parameters.kcl"
 
 threadBlankSketch = sketch(on = XY) {
   threadCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
@@ -121,11 +121,17 @@ flange = fillet(
 )
 hide(flangeSketch)
 
-coneLowerSketch = sketch(on = offsetPlane(XY, offset = threadSectionHeight - 0.3mm)) {
+coneLowerSketch = sketch(on = offsetPlane(XY, offset = threadSectionHeight - 1.5mm)) {
   lowerCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
   coincident([lowerCircle.center, ORIGIN])
   horizontal([lowerCircle.center, lowerCircle.start])
-  radius(lowerCircle) == threadCoreRadius
+  radius(lowerCircle) == threadCoreRadius + 0.03mm
+}
+coneNeckSketch = sketch(on = offsetPlane(XY, offset = threadSectionHeight)) {
+  neckCircle = circle(center = [var 0mm, var 0mm], start = [var 5.1mm, var 0mm])
+  coincident([neckCircle.center, ORIGIN])
+  horizontal([neckCircle.center, neckCircle.start])
+  radius(neckCircle) == threadNeckRadius
 }
 coneUpperSketch = sketch(on = offsetPlane(XY, offset = flangeBottom + 0.3mm)) {
   upperCircle = circle(center = [var 0mm, var 0mm], start = [var 8.8mm, var 0mm])
@@ -134,9 +140,18 @@ coneUpperSketch = sketch(on = offsetPlane(XY, offset = flangeBottom + 0.3mm)) {
   radius(upperCircle) == shoulderRadius
 }
 coneLowerRegion = region(segments = [coneLowerSketch.lowerCircle])
+coneNeckRegion = region(segments = [coneNeckSketch.neckCircle])
 coneUpperRegion = region(segments = [coneUpperSketch.upperCircle])
-coneBody = loft([coneLowerRegion, coneUpperRegion])
+coneBody = loft(
+  [
+    coneLowerRegion,
+    coneNeckRegion,
+    coneUpperRegion
+  ],
+  vDegree = 2,
+)
 hide(coneLowerSketch)
+hide(coneNeckSketch)
 hide(coneUpperSketch)
 baseWithCone = union([flange, coneBody])
 baseWithThreadBlank = union([baseWithCone, threadedEnd])
