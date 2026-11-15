@@ -1,0 +1,358 @@
+// Twin snap PCB adapter
+// Two relieved PETG snap seats for 10.85 mm circular PCBs.
+@settings(defaultLengthUnit = mm, kclVersion = 3.0)
+
+import flangeLength, flangeWidth, flangeThickness, flangeClip, flangeCornerRadius, threadPitch, threadFormRadius, threadSectionHeight, threadStartHeight, shoulderRadius, flangeBottom, flangeTop, footRadius, threadCrestCenter, threadCoreRadius, snapVersionHeight, snapStemDiameter, seatCenterSpacing, cupOutsideRadius, cupHeight, headBottom, headFlareRadius, cupFloor, pcbSeatHeight, lipBottom, seatRadius, throatRadius, leadOpeningRadius, lipLeadHeight, reliefSlotWidth, flexSlotWidth, flexRootHeight, solderRecessDiameter from "parameters.kcl"
+
+threadBlankSketch = sketch(on = XY) {
+  threadCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
+  coincident([threadCircle.center, ORIGIN])
+  horizontal([
+    threadCircle.center,
+    threadCircle.start
+  ])
+  radius(threadCircle) == threadCoreRadius
+}
+threadBlankRegion = region(segments = [threadBlankSketch.threadCircle])
+threadBlank = extrude(threadBlankRegion, length = threadSectionHeight)
+hide(threadBlankSketch)
+crestSketch = sketch(on = XZ) {
+  crestCircle = circle(center = [var 4.794mm, var 0mm], start = [var 5.325mm, var 0mm])
+  horizontalDistance([ORIGIN, crestCircle.center]) == threadCrestCenter
+  verticalDistance([ORIGIN, crestCircle.center]) == 0mm
+  horizontal([crestCircle.center, crestCircle.start])
+  radius(crestCircle) == threadFormRadius
+}
+crestRegion = region(segments = [crestSketch.crestCircle])
+crestPath = helix(
+  revolutions = 4,
+  angleStart = 0deg,
+  ccw = true,
+  radius = threadCrestCenter,
+  axis = Z,
+  length = 4 * threadPitch,
+)
+crestRidge = sweep(
+  crestRegion,
+  path = crestPath,
+  translateProfileToPath = false,
+  orientProfilePerpendicular = false,
+)
+  |> translate(z = threadStartHeight, global = true)
+hide(crestSketch)
+threadedEnd = union([threadBlank, crestRidge])
+
+flangeSketch = sketch(on = offsetPlane(XY, offset = flangeBottom)) {
+  bottom = line(start = [var -12.95mm, var -8.9mm], end = [var 4.95mm, var -8.9mm])
+  lowerClip = line(start = [var 4.95mm, var -8.9mm], end = [var 12.95mm, var -0.9mm])
+  right = line(start = [var 12.95mm, var -0.9mm], end = [var 12.95mm, var 8.9mm])
+  top = line(start = [var 12.95mm, var 8.9mm], end = [var -4.95mm, var 8.9mm])
+  upperClip = line(start = [var -4.95mm, var 8.9mm], end = [var -12.95mm, var 0.9mm])
+  left = line(start = [var -12.95mm, var 0.9mm], end = [var -12.95mm, var -8.9mm])
+  coincident([bottom.end, lowerClip.start])
+  coincident([lowerClip.end, right.start])
+  coincident([right.end, top.start])
+  coincident([top.end, upperClip.start])
+  coincident([upperClip.end, left.start])
+  coincident([left.end, bottom.start])
+  horizontal(bottom)
+  vertical(right)
+  horizontal(top)
+  vertical(left)
+  horizontalDistance([bottom.start, ORIGIN]) == flangeLength / 2
+  verticalDistance([bottom.start, ORIGIN]) == flangeWidth / 2
+  distance([bottom.start, bottom.end]) == flangeLength - flangeClip
+  horizontalDistance([lowerClip.start, lowerClip.end]) == flangeClip
+  verticalDistance([lowerClip.start, lowerClip.end]) == flangeClip
+  distance([right.start, right.end]) == flangeWidth - flangeClip
+  equalLength([bottom, top])
+  equalLength([right, left])
+}
+flangeRegion = region(
+  segments = [
+    flangeSketch.bottom,
+    flangeSketch.lowerClip
+  ],
+  intersectionIndex = -1,
+  direction = CCW,
+)
+flangeBlank = extrude(flangeRegion, length = flangeThickness, tagEnd = $flangeTopFace)
+flange = fillet(
+  flangeBlank,
+  radius = flangeCornerRadius,
+  edges = [
+    {
+      sideFaces = [
+        flangeRegion.tags.bottom,
+        flangeRegion.tags.lowerClip
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.lowerClip,
+        flangeRegion.tags.right
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.right,
+        flangeRegion.tags.top
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.top,
+        flangeRegion.tags.upperClip
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.upperClip,
+        flangeRegion.tags.left
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.left,
+        flangeRegion.tags.bottom
+      ]
+    }
+  ],
+)
+hide(flangeSketch)
+coneLowerSketch = sketch(on = offsetPlane(XY, offset = threadSectionHeight - 0.3mm)) {
+  lowerCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
+  coincident([lowerCircle.center, ORIGIN])
+  horizontal([lowerCircle.center, lowerCircle.start])
+  radius(lowerCircle) == threadCoreRadius
+}
+coneUpperSketch = sketch(on = offsetPlane(XY, offset = flangeBottom + 0.3mm)) {
+  upperCircle = circle(center = [var 0mm, var 0mm], start = [var 8.8mm, var 0mm])
+  coincident([upperCircle.center, ORIGIN])
+  horizontal([upperCircle.center, upperCircle.start])
+  radius(upperCircle) == shoulderRadius
+}
+coneLowerRegion = region(segments = [coneLowerSketch.lowerCircle])
+coneUpperRegion = region(segments = [coneUpperSketch.upperCircle])
+coneBody = loft([coneLowerRegion, coneUpperRegion])
+hide(coneLowerSketch)
+hide(coneUpperSketch)
+baseWithCone = union([flange, coneBody])
+baseWithThread = union([baseWithCone, threadedEnd])
+
+stemSketch = sketch(on = offsetPlane(XY, offset = flangeTop - 0.3mm)) {
+  stemCircle = circle(center = [var 0mm, var 0mm], start = [var 4.905mm, var 0mm])
+  coincident([stemCircle.center, ORIGIN])
+  horizontal([stemCircle.center, stemCircle.start])
+  radius(stemCircle) == snapStemDiameter / 2
+}
+stemRegion = region(segments = [stemSketch.stemCircle])
+stemBody = extrude(stemRegion, length = headBottom - flangeTop + 0.6mm)
+hide(stemSketch)
+bodyWithStem = union([baseWithThread, stemBody])
+bodyWithFoot = fillet(
+  bodyWithStem,
+  radius = footRadius,
+  edges = [
+    {
+      sideFaces = [
+        stemRegion.tags.stemCircle,
+        flangeTopFace
+      ]
+    }
+  ],
+)
+
+headSketch = sketch(on = offsetPlane(XY, offset = headBottom)) {
+  bottom = line(start = [var -6.5mm, var -6.825mm], end = [var 6.5mm, var -6.825mm])
+  rightArc = arc(start = [var 6.5mm, var -6.825mm], end = [var 6.5mm, var 6.825mm], center = [var 6.5mm, var 0mm])
+  top = line(start = [var 6.5mm, var 6.825mm], end = [var -6.5mm, var 6.825mm])
+  leftArc = arc(start = [var -6.5mm, var 6.825mm], end = [var -6.5mm, var -6.825mm], center = [var -6.5mm, var 0mm])
+  coincident([bottom.end, rightArc.start])
+  coincident([rightArc.end, top.start])
+  coincident([top.end, leftArc.start])
+  coincident([leftArc.end, bottom.start])
+  horizontal(bottom)
+  horizontal(top)
+  vertical([bottom.start, top.end])
+  vertical([bottom.end, top.start])
+  horizontalDistance([bottom.start, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([bottom.start, ORIGIN]) == cupOutsideRadius
+  distance([bottom.start, bottom.end]) == seatCenterSpacing
+  verticalDistance([bottom.start, top.end]) == 2 * cupOutsideRadius
+  vertical([rightArc.center, bottom.end])
+  verticalDistance([ORIGIN, rightArc.center]) == 0mm
+  vertical([leftArc.center, bottom.start])
+  verticalDistance([ORIGIN, leftArc.center]) == 0mm
+}
+headRegion = region(segments = [headSketch.bottom, headSketch.rightArc], intersectionIndex = -1, direction = CCW)
+headBody = extrude(headRegion, length = cupHeight, tagStart = $headBottomFace)
+hide(headSketch)
+bodyWithHead = union([bodyWithFoot, headBody])
+headWithFlare = fillet(
+  bodyWithHead,
+  radius = headFlareRadius,
+  edges = [
+    {
+      sideFaces = [
+        stemRegion.tags.stemCircle,
+        headBottomFace
+      ]
+    }
+  ],
+)
+
+solderSketch = sketch(on = offsetPlane(XY, offset = cupFloor)) {
+  recessCircle = circle(center = [var -6.5mm, var 0mm], start = [var -1.7mm, var 0mm])
+  horizontalDistance([recessCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, recessCircle.center]) == 0mm
+  horizontal([
+    recessCircle.center,
+    recessCircle.start
+  ])
+  radius(recessCircle) == solderRecessDiameter / 2
+}
+solderRegion = region(segments = [solderSketch.recessCircle])
+solderTool = extrude(solderRegion, length = snapVersionHeight - cupFloor + 0.5mm)
+solderTools = patternLinear3d(
+  solderTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(solderSketch)
+
+seatSketch = sketch(on = offsetPlane(XY, offset = pcbSeatHeight)) {
+  seatCircle = circle(center = [var -6.5mm, var 0mm], start = [var -0.975mm, var 0mm])
+  horizontalDistance([seatCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, seatCircle.center]) == 0mm
+  horizontal([seatCircle.center, seatCircle.start])
+  radius(seatCircle) == seatRadius
+}
+seatRegion = region(segments = [seatSketch.seatCircle])
+seatTool = extrude(seatRegion, length = lipBottom - pcbSeatHeight)
+seatTools = patternLinear3d(
+  seatTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(seatSketch)
+
+throatSketch = sketch(on = offsetPlane(XY, offset = lipBottom - 0.1mm)) {
+  throatCircle = circle(center = [var -6.5mm, var 0mm], start = [var -1.255mm, var 0mm])
+  horizontalDistance([throatCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, throatCircle.center]) == 0mm
+  horizontal([
+    throatCircle.center,
+    throatCircle.start
+  ])
+  radius(throatCircle) == throatRadius
+}
+throatRegion = region(segments = [throatSketch.throatCircle])
+throatTool = extrude(throatRegion, length = snapVersionHeight - lipBottom + 0.6mm)
+throatTools = patternLinear3d(
+  throatTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(throatSketch)
+
+leadLowerSketch = sketch(on = offsetPlane(XY, offset = snapVersionHeight - lipLeadHeight)) {
+  lowerCircle = circle(center = [var -6.5mm, var 0mm], start = [var -1.305mm, var 0mm])
+  horizontalDistance([lowerCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, lowerCircle.center]) == 0mm
+  horizontal([lowerCircle.center, lowerCircle.start])
+  radius(lowerCircle) == throatRadius - 0.05mm
+}
+leadUpperSketch = sketch(on = offsetPlane(XY, offset = snapVersionHeight + 0.5mm)) {
+  upperCircle = circle(center = [var -6.5mm, var 0mm], start = [var -0.079mm, var 0mm])
+  horizontalDistance([upperCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, upperCircle.center]) == 0mm
+  horizontal([upperCircle.center, upperCircle.start])
+  radius(upperCircle) == leadOpeningRadius + (leadOpeningRadius - throatRadius + 0.05mm) / lipLeadHeight * 0.5mm
+}
+leadLowerRegion = region(segments = [leadLowerSketch.lowerCircle])
+leadUpperRegion = region(segments = [leadUpperSketch.upperCircle])
+leadTool = loft([leadLowerRegion, leadUpperRegion])
+leadTools = patternLinear3d(
+  leadTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(leadLowerSketch)
+hide(leadUpperSketch)
+
+slotBottom = cupFloor + flexRootHeight
+reliefLength = seatCenterSpacing + 2 * cupOutsideRadius + 2mm
+reliefSketch = sketch(on = offsetPlane(XY, offset = slotBottom)) {
+  bottom = line(start = [var -14.325mm, var -1.5mm], end = [var 14.325mm, var -1.5mm])
+  right = line(start = [var 14.325mm, var -1.5mm], end = [var 14.325mm, var 1.5mm])
+  top = line(start = [var 14.325mm, var 1.5mm], end = [var -14.325mm, var 1.5mm])
+  left = line(start = [var -14.325mm, var 1.5mm], end = [var -14.325mm, var -1.5mm])
+  coincident([bottom.end, right.start])
+  coincident([right.end, top.start])
+  coincident([top.end, left.start])
+  coincident([left.end, bottom.start])
+  horizontal(bottom)
+  vertical(right)
+  horizontal(top)
+  vertical(left)
+  horizontalDistance([bottom.start, ORIGIN]) == reliefLength / 2
+  verticalDistance([bottom.start, ORIGIN]) == reliefSlotWidth / 2
+  distance([bottom.start, bottom.end]) == reliefLength
+  distance([right.start, right.end]) == reliefSlotWidth
+}
+reliefRegion = region(
+  segments = [
+    reliefSketch.bottom,
+    reliefSketch.right
+  ],
+  intersectionIndex = -1,
+  direction = CCW,
+)
+reliefTool = extrude(reliefRegion, length = snapVersionHeight - slotBottom + 0.5mm)
+hide(reliefSketch)
+bodyWithBreakoffRelief = subtract([headWithFlare], tools = [reliefTool])
+
+flexLength = 2 * cupOutsideRadius + 2mm
+flexSketch = sketch(on = offsetPlane(XY, offset = slotBottom)) {
+  bottom = line(start = [var -6.9mm, var -7.825mm], end = [var -6.1mm, var -7.825mm])
+  right = line(start = [var -6.1mm, var -7.825mm], end = [var -6.1mm, var 7.825mm])
+  top = line(start = [var -6.1mm, var 7.825mm], end = [var -6.9mm, var 7.825mm])
+  left = line(start = [var -6.9mm, var 7.825mm], end = [var -6.9mm, var -7.825mm])
+  coincident([bottom.end, right.start])
+  coincident([right.end, top.start])
+  coincident([top.end, left.start])
+  coincident([left.end, bottom.start])
+  horizontal(bottom)
+  vertical(right)
+  horizontal(top)
+  vertical(left)
+  horizontalDistance([bottom.start, ORIGIN]) == (seatCenterSpacing + flexSlotWidth) / 2
+  verticalDistance([bottom.start, ORIGIN]) == flexLength / 2
+  distance([bottom.start, bottom.end]) == flexSlotWidth
+  distance([right.start, right.end]) == flexLength
+}
+flexRegion = region(segments = [flexSketch.bottom, flexSketch.right], intersectionIndex = -1, direction = CCW)
+flexTool = extrude(flexRegion, length = snapVersionHeight - slotBottom + 0.5mm)
+flexTools = patternLinear3d(
+  flexTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(flexSketch)
+bodyWithFlex = subtract([bodyWithBreakoffRelief], tools = flexTools)
+bodyWithRecesses = subtract([bodyWithFlex], tools = solderTools)
+bodyWithSeats = subtract([bodyWithRecesses], tools = seatTools)
+bodyWithLips = subtract([bodyWithSeats], tools = throatTools)
+snapAdapter = subtract([bodyWithLips], tools = leadTools)
+  |> appearance(color = "#4C9EB4", roughness = 60)

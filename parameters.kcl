@@ -1,0 +1,59 @@
+// Adapter dimensions
+// Shared measurements and editable first-fit allowances in millimeters.
+@settings(defaultLengthUnit = mm, kclVersion = 3.0)
+
+export flangeLength = 25.9mm
+export flangeWidth = 17.8mm
+export flangeThickness = 3.26mm
+export flangeClip = 8mm
+export flangeCornerRadius = 1.1mm
+export threadPitch = 1.814mm
+export threadMajorDiameter = 10.65mm
+export threadFormRadius = 0.531mm
+export threadSectionHeight = 10mm
+export threadStartHeight = 0.6mm
+export coneHeight = 4.2mm
+export shoulderRadius = 8.8mm
+export flangeBottom = threadSectionHeight + coneHeight
+export flangeTop = flangeBottom + flangeThickness
+export footRadius = 2mm
+export threadCrestCenter = threadMajorDiameter / 2 - threadFormRadius
+export threadCoreRadius = 4.78mm
+
+export insertVersionHeight = 55.8mm
+export insertStemDiameter = 6.35mm
+export insertOutsideDiameter = 4mm
+export insertLength = 4mm
+export insertBoreDiameter = 3.6mm
+export insertPocketDepth = insertLength + 1mm
+export insertLeadDiameter = 4.1mm
+export insertLeadDepth = 0.3mm
+export pcbMountHoleDiameter = 3.18mm
+
+export snapVersionHeight = 55.37mm
+export snapStemDiameter = 9.81mm
+export pcbDiameter = 10.85mm
+export pcbBreakoffDiameter = 11.1mm
+export pcbThickness = 1.58mm
+export seatDiametralClearance = 0.2mm
+export seatAxialClearance = 0.2mm
+export lipOverlap = 0.18mm
+export cupWall = 1.3mm
+export cupHeight = 6.4mm
+export cupBaseThickness = 1.8mm
+export lipHeight = 0.9mm
+export lipLeadHeight = 0.35mm
+export seatCenterSpacing = 13mm
+export reliefSlotWidth = 3mm
+export flexSlotWidth = 0.8mm
+export flexRootHeight = 0.35mm
+export solderRecessDiameter = 9.6mm
+export headFlareRadius = 1.6mm
+export seatRadius = (pcbDiameter + seatDiametralClearance) / 2
+export cupOutsideRadius = seatRadius + cupWall
+export throatRadius = pcbDiameter / 2 - lipOverlap
+export leadOpeningRadius = (pcbBreakoffDiameter + 0.3mm) / 2
+export headBottom = snapVersionHeight - cupHeight
+export cupFloor = headBottom + cupBaseThickness
+export pcbSeatHeight = snapVersionHeight - lipHeight - pcbThickness - seatAxialClearance
+export lipBottom = pcbSeatHeight + pcbThickness + seatAxialClearance

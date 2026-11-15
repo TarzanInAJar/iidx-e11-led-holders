@@ -1,0 +1,196 @@
+// Insert PCB adapter
+// Native reconstruction with an axial AB011 M2.5 heat-insert pocket.
+@settings(defaultLengthUnit = mm, kclVersion = 3.0)
+
+import flangeLength, flangeWidth, flangeThickness, flangeClip, flangeCornerRadius, threadPitch, threadFormRadius, threadSectionHeight, threadStartHeight, shoulderRadius, flangeBottom, flangeTop, footRadius, threadCrestCenter, threadCoreRadius, insertVersionHeight, insertStemDiameter, insertBoreDiameter, insertPocketDepth, insertLeadDiameter, insertLeadDepth from "parameters.kcl"
+
+threadBlankSketch = sketch(on = XY) {
+  threadCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
+  coincident([threadCircle.center, ORIGIN])
+  horizontal([
+    threadCircle.center,
+    threadCircle.start
+  ])
+  radius(threadCircle) == threadCoreRadius
+}
+threadBlankRegion = region(segments = [threadBlankSketch.threadCircle])
+threadBlank = extrude(threadBlankRegion, length = threadSectionHeight)
+hide(threadBlankSketch)
+crestSketch = sketch(on = XZ) {
+  crestCircle = circle(center = [var 4.794mm, var 0mm], start = [var 5.325mm, var 0mm])
+  horizontalDistance([ORIGIN, crestCircle.center]) == threadCrestCenter
+  verticalDistance([ORIGIN, crestCircle.center]) == 0mm
+  horizontal([crestCircle.center, crestCircle.start])
+  radius(crestCircle) == threadFormRadius
+}
+crestRegion = region(segments = [crestSketch.crestCircle])
+crestPath = helix(
+  revolutions = 4,
+  angleStart = 0deg,
+  ccw = true,
+  radius = threadCrestCenter,
+  axis = Z,
+  length = 4 * threadPitch,
+)
+crestRidge = sweep(
+  crestRegion,
+  path = crestPath,
+  translateProfileToPath = false,
+  orientProfilePerpendicular = false,
+)
+  |> translate(z = threadStartHeight, global = true)
+hide(crestSketch)
+threadedEnd = union([threadBlank, crestRidge])
+
+flangeSketch = sketch(on = offsetPlane(XY, offset = flangeBottom)) {
+  bottom = line(start = [var -12.95mm, var -8.9mm], end = [var 4.95mm, var -8.9mm])
+  lowerClip = line(start = [var 4.95mm, var -8.9mm], end = [var 12.95mm, var -0.9mm])
+  right = line(start = [var 12.95mm, var -0.9mm], end = [var 12.95mm, var 8.9mm])
+  top = line(start = [var 12.95mm, var 8.9mm], end = [var -4.95mm, var 8.9mm])
+  upperClip = line(start = [var -4.95mm, var 8.9mm], end = [var -12.95mm, var 0.9mm])
+  left = line(start = [var -12.95mm, var 0.9mm], end = [var -12.95mm, var -8.9mm])
+  coincident([bottom.end, lowerClip.start])
+  coincident([lowerClip.end, right.start])
+  coincident([right.end, top.start])
+  coincident([top.end, upperClip.start])
+  coincident([upperClip.end, left.start])
+  coincident([left.end, bottom.start])
+  horizontal(bottom)
+  vertical(right)
+  horizontal(top)
+  vertical(left)
+  horizontalDistance([bottom.start, ORIGIN]) == flangeLength / 2
+  verticalDistance([bottom.start, ORIGIN]) == flangeWidth / 2
+  distance([bottom.start, bottom.end]) == flangeLength - flangeClip
+  horizontalDistance([lowerClip.start, lowerClip.end]) == flangeClip
+  verticalDistance([lowerClip.start, lowerClip.end]) == flangeClip
+  distance([right.start, right.end]) == flangeWidth - flangeClip
+  equalLength([bottom, top])
+  equalLength([right, left])
+}
+flangeRegion = region(
+  segments = [
+    flangeSketch.bottom,
+    flangeSketch.lowerClip
+  ],
+  intersectionIndex = -1,
+  direction = CCW,
+)
+flangeBlank = extrude(flangeRegion, length = flangeThickness, tagEnd = $flangeTopFace)
+flange = fillet(
+  flangeBlank,
+  radius = flangeCornerRadius,
+  edges = [
+    {
+      sideFaces = [
+        flangeRegion.tags.bottom,
+        flangeRegion.tags.lowerClip
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.lowerClip,
+        flangeRegion.tags.right
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.right,
+        flangeRegion.tags.top
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.top,
+        flangeRegion.tags.upperClip
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.upperClip,
+        flangeRegion.tags.left
+      ]
+    },
+    {
+      sideFaces = [
+        flangeRegion.tags.left,
+        flangeRegion.tags.bottom
+      ]
+    }
+  ],
+)
+hide(flangeSketch)
+
+coneLowerSketch = sketch(on = offsetPlane(XY, offset = threadSectionHeight - 0.3mm)) {
+  lowerCircle = circle(center = [var 0mm, var 0mm], start = [var 4.78mm, var 0mm])
+  coincident([lowerCircle.center, ORIGIN])
+  horizontal([lowerCircle.center, lowerCircle.start])
+  radius(lowerCircle) == threadCoreRadius
+}
+coneUpperSketch = sketch(on = offsetPlane(XY, offset = flangeBottom + 0.3mm)) {
+  upperCircle = circle(center = [var 0mm, var 0mm], start = [var 8.8mm, var 0mm])
+  coincident([upperCircle.center, ORIGIN])
+  horizontal([upperCircle.center, upperCircle.start])
+  radius(upperCircle) == shoulderRadius
+}
+coneLowerRegion = region(segments = [coneLowerSketch.lowerCircle])
+coneUpperRegion = region(segments = [coneUpperSketch.upperCircle])
+coneBody = loft([coneLowerRegion, coneUpperRegion])
+hide(coneLowerSketch)
+hide(coneUpperSketch)
+baseWithCone = union([flange, coneBody])
+baseWithThread = union([baseWithCone, threadedEnd])
+
+stemSketch = sketch(on = offsetPlane(XY, offset = flangeTop - 0.3mm)) {
+  stemCircle = circle(center = [var 0mm, var 0mm], start = [var 3.175mm, var 0mm])
+  coincident([stemCircle.center, ORIGIN])
+  horizontal([stemCircle.center, stemCircle.start])
+  radius(stemCircle) == insertStemDiameter / 2
+}
+stemRegion = region(segments = [stemSketch.stemCircle])
+stemBody = extrude(stemRegion, length = insertVersionHeight - flangeTop + 0.3mm, tagEnd = $stemTopFace)
+hide(stemSketch)
+bodyWithStem = union([baseWithThread, stemBody])
+adapterWithFoot = fillet(
+  bodyWithStem,
+  radius = footRadius,
+  edges = [
+    {
+      sideFaces = [
+        stemRegion.tags.stemCircle,
+        flangeTopFace
+      ]
+    }
+  ],
+)
+
+boreSketch = sketch(on = offsetPlane(XY, offset = insertVersionHeight - insertPocketDepth)) {
+  boreCircle = circle(center = [var 0mm, var 0mm], start = [var 1.8mm, var 0mm])
+  coincident([boreCircle.center, ORIGIN])
+  horizontal([boreCircle.center, boreCircle.start])
+  radius(boreCircle) == insertBoreDiameter / 2
+}
+boreRegion = region(segments = [boreSketch.boreCircle])
+boreTool = extrude(boreRegion, length = insertPocketDepth + 0.5mm)
+hide(boreSketch)
+boredAdapter = subtract([adapterWithFoot], tools = [boreTool])
+
+leadLowerSketch = sketch(on = offsetPlane(XY, offset = insertVersionHeight - insertLeadDepth)) {
+  lowerCircle = circle(center = [var 0mm, var 0mm], start = [var 1.75mm, var 0mm])
+  coincident([lowerCircle.center, ORIGIN])
+  horizontal([lowerCircle.center, lowerCircle.start])
+  radius(lowerCircle) == insertBoreDiameter / 2 - 0.05mm
+}
+leadUpperSketch = sketch(on = offsetPlane(XY, offset = insertVersionHeight + 0.4mm)) {
+  upperCircle = circle(center = [var 0mm, var 0mm], start = [var 2.38mm, var 0mm])
+  coincident([upperCircle.center, ORIGIN])
+  horizontal([upperCircle.center, upperCircle.start])
+  radius(upperCircle) == insertLeadDiameter / 2 + (insertLeadDiameter - insertBoreDiameter + 0.1mm) / (2 * insertLeadDepth) * 0.4mm
+}
+leadLowerRegion = region(segments = [leadLowerSketch.lowerCircle])
+leadUpperRegion = region(segments = [leadUpperSketch.upperCircle])
+leadTool = loft([leadLowerRegion, leadUpperRegion])
+hide(leadLowerSketch)
+hide(leadUpperSketch)
+insertAdapter = subtract([boredAdapter], tools = [leadTool])
+  |> appearance(color = "#E0A24C", roughness = 60)

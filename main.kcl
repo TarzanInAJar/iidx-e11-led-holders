@@ -1,0 +1,9 @@
+// Lightbulb PCB adapters
+// Native PETG adapter variants; editable dimensions are in parameters.kcl.
+@settings(kclVersion = 3.0, defaultLengthUnit = mm)
+
+import "insertAdapter.kcl" as insertVersion
+import "snapAdapter.kcl" as snapVersion
+
+insertAdapter = translate(insertVersion, x = -20mm, global = true)
+snapAdapter = translate(snapVersion, x = 20mm, global = true)

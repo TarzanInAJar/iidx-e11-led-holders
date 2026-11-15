@@ -1,0 +1,10 @@
+title = "iidx spotlight led pcb holders"
+default_file = "main.kcl"
+
+[settings.app]
+[settings.meta]
+id = "4c2b395e-010c-45f2-946d-96a8e95d82ce"
+
+[settings.modeling]
+[zookeeper."zoo.dev"]
+conversation_ids = [ "dba621f8-19da-4d35-bda6-7cf4dfcbd7fc" ]
