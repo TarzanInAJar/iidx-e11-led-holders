@@ -203,7 +203,9 @@ headWithFlare = fillet(
   ],
 )
 
-solderSketch = sketch(on = offsetPlane(XY, offset = cupFloor)) {
+// Open both solder recesses through the underside, retaining the central bridge.
+wireAccessBottom = headBottom - headFlareRadius - 0.5mm
+solderSketch = sketch(on = offsetPlane(XY, offset = wireAccessBottom)) {
   recessCircle = circle(center = [var -6.5mm, var 0mm], start = [var -1.7mm, var 0mm])
   horizontalDistance([recessCircle.center, ORIGIN]) == seatCenterSpacing / 2
   verticalDistance([ORIGIN, recessCircle.center]) == 0mm
@@ -214,7 +216,7 @@ solderSketch = sketch(on = offsetPlane(XY, offset = cupFloor)) {
   radius(recessCircle) == solderRecessDiameter / 2
 }
 solderRegion = region(segments = [solderSketch.recessCircle])
-solderTool = extrude(solderRegion, length = snapVersionHeight - cupFloor + 0.5mm)
+solderTool = extrude(solderRegion, length = snapVersionHeight - wireAccessBottom + 0.5mm)
 solderTools = patternLinear3d(
   solderTool,
   instances = 2,

@@ -18,7 +18,8 @@
 - Cup wall reduced **1.30 → 1.20 mm** to keep the outside head size unchanged as the seat cavities grow. Overall heights, stem diameters, flange dimensions, seat centers and relief-slot widths are unchanged. Revised insertion/retention force still requires a print test.
 - Two equal seats on **13.00 mm centers**. Four spring sectors per seat, with 0.80 mm flex slots and a 3.00 mm-wide longitudinal break-off relief.
 - Orient each board's break-off remnant toward a wide longitudinal gap. Remnant tangential width was not supplied; widen `reliefSlotWidth` if its actual width exceeds the gap.
-- Support ledges surround a **9.60 mm solder recess**, now about **1.82 mm deep** because the increased axial gap lowers the PCB ledge by 0.10 mm. PCB component/trace keep-outs were not supplied and must be checked.
+- Wiring-access revision: both **9.60 mm solder recesses now open through the underside**, rather than ending at a solid cup floor. Cutters start at Z **46.87 mm**, below the head/flare, leaving a central **3.40 mm-wide bridge** between the two circular cuts and approximately **0.825 mm radial PCB ledges**. The stem partially occupies the inboard underside; wire entry is from the open outboard portions. Overall size, PCB seating heights, snap fits, slots, flange and thread are unchanged; the gold part and shared parameters were not edited.
+- These openings are intended for the user's three wires and solder access. Wire insulation diameter and PCB pad/component locations were not supplied; actual routing clearance and revised head strength need a physical check.
 
 ## Reconstruction assumptions and limits
 - This is a native reconstruction using supplied dimensions and rendered STL references, not an exact mesh trace. Unmeasured flange corner clips/radii, cone dimensions, seat spacing, and shoulder blends are editable estimates.
