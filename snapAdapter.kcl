@@ -27,7 +27,7 @@ crestRegion = region(segments = [crestSketch.crestCircle])
 crestPath = helix(
   revolutions = 4,
   angleStart = 0deg,
-  ccw = true,
+  ccw = false,
   radius = threadCrestCenter,
   axis = Z,
   length = 4 * threadPitch,
@@ -40,7 +40,7 @@ crestRidge = sweep(
 )
   |> translate(z = threadStartHeight, global = true)
 hide(crestSketch)
-threadedEnd = union([threadBlank, crestRidge])
+threadedEnd = threadBlank
 
 flangeSketch = sketch(on = offsetPlane(XY, offset = flangeBottom)) {
   bottom = line(start = [var -12.95mm, var -8.9mm], end = [var 4.95mm, var -8.9mm])
@@ -138,7 +138,8 @@ coneBody = loft([coneLowerRegion, coneUpperRegion])
 hide(coneLowerSketch)
 hide(coneUpperSketch)
 baseWithCone = union([flange, coneBody])
-baseWithThread = union([baseWithCone, threadedEnd])
+baseWithThreadBlank = union([baseWithCone, threadedEnd])
+baseWithThread = union([baseWithThreadBlank, crestRidge])
 
 stemSketch = sketch(on = offsetPlane(XY, offset = flangeTop - 0.3mm)) {
   stemCircle = circle(center = [var 0mm, var 0mm], start = [var 4.905mm, var 0mm])
