@@ -241,6 +241,44 @@ solderTools = patternLinear3d(
 )
 hide(solderSketch)
 
+// Widen the underside below the ledge and taper the wire approach into the stem.
+padAccessRadius = solderRecessDiameter / 2 + 0.45mm
+padLedgeThickness = 0.8mm
+wireReliefBottom = headBottom - 7mm
+wireReliefTop = wireAccessBottom + 0.1mm
+wireReliefLowerSketch = sketch(on = offsetPlane(XY, offset = wireReliefBottom)) {
+  lowerCircle = circle(center = [var -6.5mm, var 0mm], start = [var -5.1mm, var 0mm])
+  horizontalDistance([lowerCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, lowerCircle.center]) == 0mm
+  horizontal([lowerCircle.center, lowerCircle.start])
+  radius(lowerCircle) == 1.4mm
+}
+wireReliefUpperSketch = sketch(on = offsetPlane(XY, offset = wireReliefTop)) {
+  upperCircle = circle(center = [var -6.5mm, var 0mm], start = [var -1.25mm, var 0mm])
+  horizontalDistance([upperCircle.center, ORIGIN]) == seatCenterSpacing / 2
+  verticalDistance([ORIGIN, upperCircle.center]) == 0mm
+  horizontal([upperCircle.center, upperCircle.start])
+  radius(upperCircle) == padAccessRadius
+}
+wireReliefLowerRegion = region(segments = [wireReliefLowerSketch.lowerCircle])
+wireReliefUpperRegion = region(segments = [wireReliefUpperSketch.upperCircle])
+wireFlareTool = loft([
+  wireReliefLowerRegion,
+  wireReliefUpperRegion
+])
+wirePocketTool = extrude(wireReliefUpperRegion, length = pcbSeatHeight - padLedgeThickness - wireReliefTop + 0.3mm)
+  |> translate(z = -0.3mm, global = true)
+wireAccessTool = union([wireFlareTool, wirePocketTool])
+wireAccessTools = patternLinear3d(
+  wireAccessTool,
+  instances = 2,
+  distance = seatCenterSpacing,
+  axis = X,
+  useOriginal = true,
+)
+hide(wireReliefLowerSketch)
+hide(wireReliefUpperSketch)
+
 seatSketch = sketch(on = offsetPlane(XY, offset = pcbSeatHeight)) {
   seatCircle = circle(center = [var -6.5mm, var 0mm], start = [var -0.975mm, var 0mm])
   horizontalDistance([seatCircle.center, ORIGIN]) == seatCenterSpacing / 2
@@ -337,7 +375,6 @@ reliefRegion = region(
 )
 reliefTool = extrude(reliefRegion, length = snapVersionHeight - slotBottom + 0.5mm)
 hide(reliefSketch)
-bodyWithBreakoffRelief = subtract([headWithFlare], tools = [reliefTool])
 
 flexLength = 2 * cupOutsideRadius + 2mm
 flexSketch = sketch(on = offsetPlane(XY, offset = slotBottom)) {
@@ -368,8 +405,53 @@ flexTools = patternLinear3d(
   useOriginal = true,
 )
 hide(flexSketch)
+
+// Open the outboard ends of both seats, retaining opposed side supports.
+wireMouthWidth = 8.4mm
+wireMouthInner = seatCenterSpacing / 2 - padAccessRadius + 0.2mm
+wireMouthOuter = seatCenterSpacing / 2 + cupOutsideRadius + 1mm
+wireMouthLength = wireMouthOuter - wireMouthInner
+wireMouthBottom = headBottom - 0.2mm
+wireMouthSketch = sketch(on = offsetPlane(XY, offset = wireMouthBottom)) {
+  bottom = line(start = [var -14.325mm, var -4.2mm], end = [var -1.45mm, var -4.2mm])
+  right = line(start = [var -1.45mm, var -4.2mm], end = [var -1.45mm, var 4.2mm])
+  top = line(start = [var -1.45mm, var 4.2mm], end = [var -14.325mm, var 4.2mm])
+  left = line(start = [var -14.325mm, var 4.2mm], end = [var -14.325mm, var -4.2mm])
+  coincident([bottom.end, right.start])
+  coincident([right.end, top.start])
+  coincident([top.end, left.start])
+  coincident([left.end, bottom.start])
+  horizontal(bottom)
+  vertical(right)
+  horizontal(top)
+  vertical(left)
+  horizontalDistance([bottom.start, ORIGIN]) == wireMouthOuter
+  verticalDistance([bottom.start, ORIGIN]) == wireMouthWidth / 2
+  distance([bottom.start, bottom.end]) == wireMouthLength
+  distance([right.start, right.end]) == wireMouthWidth
+}
+wireMouthRegion = region(
+  segments = [
+    wireMouthSketch.bottom,
+    wireMouthSketch.right
+  ],
+  intersectionIndex = -1,
+  direction = CCW,
+)
+wireMouthTool = extrude(wireMouthRegion, length = snapVersionHeight - wireMouthBottom + 0.5mm)
+wireMouthTools = patternLinear3d(
+  wireMouthTool,
+  instances = 2,
+  distance = wireMouthOuter + wireMouthInner,
+  axis = X,
+  useOriginal = true,
+)
+hide(wireMouthSketch)
+bodyWithMouths = subtract([headWithFlare], tools = wireMouthTools)
+bodyWithBreakoffRelief = subtract([bodyWithMouths], tools = [reliefTool])
 bodyWithFlex = subtract([bodyWithBreakoffRelief], tools = flexTools)
-bodyWithRecesses = subtract([bodyWithFlex], tools = solderTools)
+bodyWithSolderRecesses = subtract([bodyWithFlex], tools = solderTools)
+bodyWithRecesses = subtract([bodyWithSolderRecesses], tools = wireAccessTools)
 bodyWithSeats = subtract([bodyWithRecesses], tools = seatTools)
 bodyWithLips = subtract([bodyWithSeats], tools = throatTools)
 snapAdapter = subtract([bodyWithLips], tools = leadTools)
