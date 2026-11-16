@@ -447,6 +447,7 @@ wireMouthTools = patternLinear3d(
   useOriginal = true,
 )
 hide(wireMouthSketch)
+
 bodyWithMouths = subtract([headWithFlare], tools = wireMouthTools)
 bodyWithBreakoffRelief = subtract([bodyWithMouths], tools = [reliefTool])
 bodyWithFlex = subtract([bodyWithBreakoffRelief], tools = flexTools)
